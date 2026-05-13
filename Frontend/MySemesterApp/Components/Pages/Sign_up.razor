@@ -1,0 +1,116 @@
+@page "/signup"
+@layout NoNavLayout
+@using System.Net.Http.Json
+@using MySemesterApp.Models
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<style>
+    .auth-bg {
+        background: linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.8)), 
+                    url('https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=2070');
+        background-size: cover;
+        background-position: center;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .auth-card {
+        background: rgba(30, 41, 59, 0.7);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 40px;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+</style>
+
+<div class="auth-bg">
+    <div class="auth-card">
+        <div class="text-center mb-4">
+            <h2 class="text-white fw-bold">Join the Mission</h2>
+            <p class="text-white-50">Create an account to track deals.</p>
+        </div>
+
+        @if (errorMessage != null)
+        {
+            <div class="alert alert-danger border-0 shadow-sm">
+                <span class="oi oi-warning me-2"></span> @errorMessage
+            </div>
+        }
+
+        <div class="mb-4">
+            <label class="form-label text-white-50 small text-uppercase">Email Address</label>
+            <input type="email" @bind="userModel.Email" class="form-control bg-dark text-white border-secondary" placeholder="agent@example.com" />
+        </div>
+
+        <div class="mb-5">
+            <label class="form-label text-white-50 small text-uppercase">Password</label>
+            <input type="password" @bind="userModel.Password" class="form-control bg-dark text-white border-secondary" placeholder="••••••••" />
+        </div>
+
+        <button class="btn btn-info w-100 fw-bold py-2 mb-3" @onclick="HandleSignup" disabled="@isLoading">
+            @if (isLoading)
+            {
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                <span>Creating Account...</span>
+            }
+            else
+            {
+                <span>Create Account</span>
+            }
+        </button>
+
+        <div class="text-center">
+            <a href="/" class="text-white-50 text-decoration-none hover-white">
+                <span class="oi oi-arrow-left me-1"></span> Back to Login
+            </a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private UserCreate userModel = new UserCreate();
+    private bool isLoading = false;
+    private string? errorMessage;
+
+    private async Task HandleSignup()
+    {
+        if (string.IsNullOrWhiteSpace(userModel.Email) || string.IsNullOrWhiteSpace(userModel.Password))
+        {
+            errorMessage = "Please enter both an email and a password.";
+            return;
+        }
+
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            // Call the Python backend to create the user
+            var response = await Http.PostAsJsonAsync("signup", userModel);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                // If successful, send them back to the login page!
+                Nav.NavigateTo("/");
+            }
+            else
+            {
+                errorMessage = "Failed to create account. That email might already be taken.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Connection error. Is your Python backend running?";
+            Console.WriteLine(ex.Message);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

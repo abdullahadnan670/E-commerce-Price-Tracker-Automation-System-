@@ -1,0 +1,114 @@
+@page "/cart"
+@attribute [Authorize]
+@using System.Net.Http.Json
+@using MySemesterApp.Models
+@using Microsoft.AspNetCore.Components.Authorization
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Nav
+
+<div class="py-5">
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="text-white fw-bold">My Tracking List</h1>
+            <p class="text-white-50">Monitoring prices for your saved items.</p>
+        </div>
+        <button class="btn btn-outline-info" @onclick="LoadCart">
+            <span class="oi oi-reload me-1"></span> Refresh Prices
+        </button>
+    </div>
+
+    @if (cartItems == null)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-info" role="status"></div>
+            <p class="text-white-50 mt-2">Loading your gear...</p>
+        </div>
+    }
+    else if (!cartItems.Any())
+    {
+        <div class="text-center py-5 glass-card">
+            <h3 class="text-white-50">Your list is empty.</h3>
+            <a href="/Search" class="btn btn-primary mt-3 px-4">Find Deals</a>
+        </div>
+    }
+    else
+    {
+        @* 🔥 Grouping items by Category *@
+        @foreach (var categoryGroup in cartItems.GroupBy(c => string.IsNullOrEmpty(c.Category) ? "Uncategorized" : c.Category))
+        {
+            <div class="mb-5">
+                
+                @* 🌟 Flexbox header to put the button opposite the Category Name *@
+                <div class="d-flex justify-content-between align-items-center border-bottom border-secondary pb-2 mb-4">
+                    <h3 class="text-white mb-0">
+                        <span class="oi oi-folder me-2 text-info"></span>@categoryGroup.Key
+                    </h3>
+                    
+                    @* Pass the MissionId of the first item in this category to our compare page *@
+                    <button class="btn btn-primary" @onclick='() => Nav.NavigateTo($"/compare/{categoryGroup.First().MissionId}")'>
+                        <span class="oi oi-bar-chart"></span> Compare Category
+                    </button>
+                </div>
+
+                <div class="row g-4">
+                    @foreach (var item in categoryGroup)
+                    {
+                        <div class="col-md-6 col-lg-4">
+                            <div class="glass-card p-4 h-100 d-flex flex-column">
+                                <div class="d-flex justify-content-between mb-3">
+                                    <span class="badge rounded-pill bg-primary px-3">TRACKING</span>
+                                    <span class="badge rounded-pill border border-secondary text-white-50">@item.Source</span>
+                                </div>
+                                
+                                <h5 class="text-white mb-3 fw-bold">@item.Name</h5>
+                                
+                                <div class="mt-auto">
+                                    <div class="d-flex justify-content-between align-items-end border-top border-secondary pt-3">
+                                        <div>
+                                            <small class="text-white-50 d-block mb-1">Current Price</small>
+                                            @* Replaced the double $$ fix here! *@
+                                            <span class="fs-4 fw-bold text-white">@item.Price.Replace("$$", "$")</span>
+                                        </div>
+                                        <div class="text-end">
+                                            <small class="text-info d-block mb-1">Alert Price</small>
+                                            <span class="fs-5 fw-bold text-info">
+                                                @(item.TargetPrice > 0 ? $"${item.TargetPrice}" : "—")
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <a href="@item.Url" target="_blank" class="btn btn-outline-light w-100 mt-4 text-decoration-none">
+                                        🌐 Open Store Page
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<ProductDto>? cartItems;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCart();
+    }
+
+    private async Task LoadCart()
+    {
+        try 
+        {
+            cartItems = await Http.GetFromJsonAsync<List<ProductDto>>("cart") 
+                        ?? new List<ProductDto>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Auth/Server Error: {ex.Message}");
+            cartItems = new List<ProductDto>();
+        }
+    }
+}

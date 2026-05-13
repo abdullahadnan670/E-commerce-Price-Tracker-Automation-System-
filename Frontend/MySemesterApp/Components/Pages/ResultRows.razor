@@ -1,0 +1,97 @@
+@using System.Net.Http.Json
+@inject HttpClient Http
+@implements IDisposable
+
+@if (products == null)
+{
+    <tr><td colspan="4" class="text-center">Initializing...</td></tr>
+}
+else if (!products.Any())
+{
+    <tr><td colspan="4" class="text-center text-muted">No results found yet. Checking Amazon and eBay...</td></tr>
+}
+else
+{
+    @foreach (var p in products)
+    {
+        var isGoodDeal = p.numeric_price > 0 && p.numeric_price <= TargetPrice;
+        
+        <tr class="@(isGoodDeal ? "table-success" : "")">
+            <td>
+                <span class="badge @(p.source == "Amazon" ? "bg-warning text-dark" : "bg-primary")">
+                    @p.source
+                </span>
+            </td>
+            <td><a href="@p.url" target="_blank" class="text-decoration-none">@p.name</a></td>
+            <td><strong>@p.price</strong></td>
+            <td>
+                @if (isGoodDeal)
+                {
+                    <span class="fw-bold text-success">✅ Below Target!</span>
+                }
+                else
+                {
+                    <span class="text-muted">Above Target</span>
+                }
+            </td>
+        </tr>
+    }
+}
+
+@code {
+    [Parameter] public int MissionId { get; set; }
+    [Parameter] public float TargetPrice { get; set; }
+
+    private List<Product>? products = new();
+    private bool _isDisposed;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FetchResults();
+        StartPolling();
+    }
+
+    private void StartPolling()
+    {
+        _ = Task.Run(async () =>
+        {
+            while (!_isDisposed)
+            {
+                await Task.Delay(3000); 
+                await FetchResults();
+                await InvokeAsync(StateHasChanged);
+            }
+        });
+    }
+
+    private async Task FetchResults()
+    {
+        try
+        {
+            // Use the relative path because BaseAddress is already set in MauiProgram.cs
+            // This prevents "Double URL" issues like http://127.0.0.1:8000/http://127.0.0.1:8000/results/1
+            var response = await Http.GetFromJsonAsync<List<Product>>($"/results/{MissionId}");
+            
+            if (response != null)
+            {
+                products = response;
+            }
+        }
+        catch (Exception ex)
+        {
+            // This will show up in your Debug Output window in Visual Studio
+            System.Diagnostics.Debug.WriteLine($"Error fetching results: {ex.Message}");
+        }
+    }
+
+    public void Dispose() => _isDisposed = true;
+
+    public class Product 
+    { 
+        public string name { get; set; } = ""; 
+        public string url { get; set; } = "";
+        public string price { get; set; } = "";
+        public float numeric_price { get; set; } 
+        public string source { get; set; } = ""; 
+    }
+}
