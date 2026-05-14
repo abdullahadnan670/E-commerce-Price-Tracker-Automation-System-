@@ -1,12 +1,14 @@
+import os
 import smtplib
 from email.message import EmailMessage
+from dotenv import load_dotenv
 
+# Load the hidden variables from the .env file
+load_dotenv()
 # --- CONFIGURATION ---
 # Replace this with the Gmail address you want to send emails FROM
-SENDER_EMAIL = "241861@students.au.edu.pk" 
-
-# This is NOT your normal Gmail password! See the instructions below to get this.
-SENDER_APP_PASSWORD = "wzlb lmhz zdfi rcuy" 
+SENDER_EMAIL = os.getenv("SENDER_EMAIL")
+SENDER_APP_PASSWORD = os.getenv("SENDER_APP_PASSWORD") 
 
 def send_deal_alert(recipient_email: str, product_name: str, price: str, url: str):
     """Sends an HTML email alert when a target price is hit."""

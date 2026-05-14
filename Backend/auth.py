@@ -6,6 +6,7 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+from dotenv import load_dotenv
 
 # Local imports
 from database import engine
@@ -13,7 +14,10 @@ from models import User
 
 # --- CONFIGURATION ---
 # In production, this SECRET_KEY must be a random string saved in a .env file!
-SECRET_KEY = "super_secret_temporary_key_change_me_later" 
+load_dotenv()
+
+# --- CONFIGURATION ---
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # Token lasts for 1 week
 
