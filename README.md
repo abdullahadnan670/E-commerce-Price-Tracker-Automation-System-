@@ -23,4 +23,4 @@ Scraping: BeautifulSoup / Selenium (or specify if you used Scrapy)
 
 Automation: Python apscheduler or cron jobs
 
-Database: [Insert Database here, e.g., SQLite/PostgreSQL] to store price history.
+Database: fastApi.
